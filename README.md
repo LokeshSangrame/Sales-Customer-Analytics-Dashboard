@@ -15,7 +15,7 @@ An end-to-end analytics solution built to analyze sales trends, customer segment
 ## Files
 ```
 sales_dashboard/
-├── dashboard.html      ← Interactive web dashboard (open in browser)
+├── index.html      ← Interactive web dashboard (open in browser)
 ├── queries.sql         ← Full SQL schema + 6 optimized analysis queries
 ├── analysis.py         ← Python data pipeline (generation → cleaning → KPIs → charts)
 └── README.md           ← This file
@@ -23,7 +23,7 @@ sales_dashboard/
 
 ## Key Features
 
-### Dashboard (dashboard.html)
+### Dashboard (index.html)
 - 5 live KPI cards: Revenue, Orders, AOV, Churn Rate, Active Customers
 - Interactive filters: Region / Segment / Quarter
 - Charts: Monthly Revenue Trend (YoY), Segment Donut, Region Bar, Churn Line, Category Bar
@@ -56,7 +56,7 @@ sales_dashboard/
 ### Dashboard
 ```bash
 # Just open in browser
-open dashboard.html
+open index.html
 # or double-click the file
 ```
 
