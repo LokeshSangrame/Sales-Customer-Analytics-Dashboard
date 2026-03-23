@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sales & Customer Analytics Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #4f8ef7;
+    --accent2: #7c5cfc;
+    --green: #22d3a5;
+    --red: #f75a5a;
+    --yellow: #f7c948;
+    --text: #e8eaf6;
+    --muted: #6b7094;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 16px; letter-spacing: -0.3px;
+  }
+  .logo-icon {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .header-meta {
+    display: flex; align-items: center; gap: 16px;
+    color: var(--muted); font-size: 12px;
+  }
+  .badge {
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 20px; font-size: 11px;
+    color: var(--green); font-family: var(--mono);
+  }
+
+  /* FILTERS */
+  .filters {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 28px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .filter-label { color: var(--muted); font-size: 12px; font-weight: 500; margin-right: 4px; }
+  select {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 12px; border-radius: 7px;
+    font-family: var(--font); font-size: 12px; cursor: pointer;
+    outline: none; transition: border-color .2s;
+  }
+  select:hover { border-color: var(--accent); }
+  .filter-divider { width: 1px; height: 20px; background: var(--border); }
+
+  /* MAIN LAYOUT */
+  main { padding: 20px 28px; }
+
+  /* KPI ROW */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s, transform .2s;
+  }
+  .kpi-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .kpi-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    border-radius: 12px 12px 0 0;
+  }
+  .kpi-card.blue::before  { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .kpi-card.green::before { background: linear-gradient(90deg, var(--green), #0fa); }
+  .kpi-card.red::before   { background: var(--red); }
+  .kpi-card.yellow::before{ background: var(--yellow); }
+  .kpi-card.purple::before{ background: linear-gradient(90deg, var(--accent2), #c084fc); }
+
+  .kpi-label { color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .kpi-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .kpi-delta {
+    font-size: 11px; font-weight: 600; display: inline-flex;
+    align-items: center; gap: 3px; padding: 2px 7px;
+    border-radius: 20px;
+  }
+  .kpi-delta.up   { background: rgba(34,211,165,.12); color: var(--green); }
+  .kpi-delta.down { background: rgba(247,90,90,.12);  color: var(--red);   }
+
+  /* CHART GRID */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .chart-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .chart-card:hover { border-color: var(--border); }
+  .chart-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .chart-title { font-weight: 600; font-size: 13px; }
+  .chart-sub   { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .chart-tag {
+    background: var(--surface2); border: 1px solid var(--border);
+    font-size: 10px; padding: 3px 8px; border-radius: 6px;
+    color: var(--muted); font-family: var(--mono);
+  }
+  canvas { width: 100% !important; }
+
+  /* TABLE */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  thead th {
+    text-align: left; font-size: 11px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .4px;
+    padding: 0 12px 10px; border-bottom: 1px solid var(--border);
+  }
+  tbody tr { transition: background .15s; }
+  tbody tr:hover td { background: var(--surface2); }
+  tbody td {
+    padding: 10px 12px; font-size: 12px;
+    border-bottom: 1px solid rgba(46,51,80,.5);
+  }
+  .seg-pill {
+    padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600;
+  }
+  .seg-pill.premium  { background: rgba(79,142,247,.15); color: var(--accent); }
+  .seg-pill.standard { background: rgba(122,92,252,.15); color: var(--accent2); }
+  .seg-pill.basic    { background: rgba(107,112,148,.15); color: var(--muted); }
+  .churn-bar {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .churn-track {
+    flex: 1; height: 4px; background: var(--surface2); border-radius: 2px;
+  }
+  .churn-fill { height: 100%; border-radius: 2px; }
+
+  /* FOOTER */
+  footer {
+    margin-top: 8px; padding: 16px 0;
+    color: var(--muted); font-size: 11px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid var(--border);
+  }
+  .footer-tag { font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📊</div>
+    Sales & Customer Analytics
+  </div>
+  <div class="header-meta">
+    <span>FY 2023–24</span>
+    <div class="badge">● LIVE</div>
+    <span>Last refresh: Today, 09:41 AM</span>
+  </div>
+</header>
+
+<div class="filters">
+  <span class="filter-label">Filter by:</span>
+  <select id="regionFilter" onchange="applyFilters()">
+    <option value="all">All Regions</option>
+    <option value="north">North India</option>
+    <option value="south">South India</option>
+    <option value="east">East India</option>
+    <option value="west">West India</option>
+  </select>
+  <select id="segFilter" onchange="applyFilters()">
+    <option value="all">All Segments</option>
+    <option value="premium">Premium</option>
+    <option value="standard">Standard</option>
+    <option value="basic">Basic</option>
+  </select>
+  <select id="quarterFilter" onchange="applyFilters()">
+    <option value="all">All Quarters</option>
+    <option value="q1">Q1 (Apr–Jun)</option>
+    <option value="q2">Q2 (Jul–Sep)</option>
+    <option value="q3">Q3 (Oct–Dec)</option>
+    <option value="q4">Q4 (Jan–Mar)</option>
+  </select>
+  <div class="filter-divider"></div>
+  <span class="filter-label" style="color: var(--accent); cursor:pointer;" onclick="resetFilters()">↺ Reset</span>
+</div>
+
+<main>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi-card blue">
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value" id="kpi-revenue">₹48.2L</div>
+      <span class="kpi-delta up" id="kpi-rev-delta">▲ 12.4% vs LY</span>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Total Orders</div>
+      <div class="kpi-value" id="kpi-orders">3,847</div>
+      <span class="kpi-delta up" id="kpi-ord-delta">▲ 8.1% vs LY</span>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Avg Order Value</div>
+      <div class="kpi-value" id="kpi-aov">₹1,253</div>
+      <span class="kpi-delta up">▲ 3.9% vs LY</span>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Customer Churn</div>
+      <div class="kpi-value" id="kpi-churn">14.2%</div>
+      <span class="kpi-delta down">▼ 2.1% vs LY</span>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">Active Customers</div>
+      <div class="kpi-value" id="kpi-customers">1,284</div>
+      <span class="kpi-delta up">▲ 6.7% vs LY</span>
+    </div>
+  </div>
+
+  <!-- ROW 1: Revenue Trend + Segment Donut -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Monthly Revenue Trend</div>
+          <div class="chart-sub">FY 2023–24 vs FY 2022–23</div>
+        </div>
+        <span class="chart-tag">SQL: monthly_revenue_view</span>
+      </div>
+      <canvas id="revTrendChart" height="90"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Revenue by Segment</div>
+          <div class="chart-sub">Customer tier distribution</div>
+        </div>
+        <span class="chart-tag">DAX: CALCULATE</span>
+      </div>
+      <canvas id="segDonut" height="150"></canvas>
+    </div>
+  </div>
+
+  <!-- ROW 2: Region Bar + Churn Trend + Category -->
+  <div class="chart-grid-3">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Sales by Region</div>
+          <div class="chart-sub">Revenue contribution %</div>
+        </div>
+        <span class="chart-tag">GROUP BY region</span>
+      </div>
+      <canvas id="regionBar" height="160"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Churn Rate by Quarter</div>
+          <div class="chart-sub">Retention performance</div>
+        </div>
+        <span class="chart-tag">KPI: churn_rate</span>
+      </div>
+      <canvas id="churnLine" height="160"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Top Product Categories</div>
+          <div class="chart-sub">Revenue share</div>
+        </div>
+        <span class="chart-tag">ORDER BY revenue DESC</span>
+      </div>
+      <canvas id="catBar" height="160"></canvas>
+    </div>
+  </div>
+
+  <!-- CUSTOMER TABLE -->
+  <div class="table-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Customer Segment Performance</div>
+        <div class="chart-sub">Drill-down view — Revenue, Orders, AOV and Churn by segment</div>
+      </div>
+      <span class="chart-tag">JOIN: customers ⟕ orders</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Segment</th>
+          <th>Customers</th>
+          <th>Total Revenue</th>
+          <th>Avg Order Value</th>
+          <th>Orders</th>
+          <th>Churn Rate</th>
+          <th>Revenue Share</th>
+        </tr>
+      </thead>
+      <tbody id="segTable"></tbody>
+    </table>
+  </div>
+
+</main>
+
+<footer>
+  <span>Built by Lokesh Sangrame · Sales & Customer Analytics Dashboard · Power BI + SQL + Python</span>
+  <span class="footer-tag">v1.0 · CGPA 7.98 · IIIT Bhagalpur</span>
+</footer>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const months = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+
+const data = {
+  all: {
+    rev23: [310,295,340,380,360,420,510,490,540,580,560,610],
+    rev22: [270,260,300,320,310,370,430,420,470,500,490,540],
+    regions: { north:14.2, south:11.8, east:9.6, west:12.6 },
+    segments: { premium:52, standard:31, basic:17 },
+    churnQ: [18.1, 16.4, 14.9, 14.2],
+    cats: { Electronics:18.4, Appliances:14.2, Furniture:11.6, FMCG:9.8, Automotive:7.2 }
+  },
+  north: {
+    rev23: [80,78,92,102,96,114,138,132,145,156,151,165],
+    rev22: [70,68,80,85,82,98,115,112,125,132,130,142],
+    regions: { north:14.2, south:0, east:0, west:0 },
+    segments: { premium:48, standard:35, basic:17 },
+    churnQ: [20.1, 18.2, 16.1, 15.3],
+    cats: { Electronics:20.1, Appliances:15.8, Furniture:12.2, FMCG:8.4, Automotive:6.1 }
+  },
+  south: {
+    rev23: [72,68,78,88,83,97,118,113,124,133,129,140],
+    rev22: [62,58,68,73,70,85,99,96,107,114,112,124],
+    regions: { north:0, south:11.8, east:0, west:0 },
+    segments: { premium:55, standard:28, basic:17 },
+    churnQ: [16.2, 14.8, 13.4, 12.8],
+    cats: { Electronics:17.2, Appliances:13.6, Furniture:10.8, FMCG:11.2, Automotive:8.4 }
+  },
+  east: {
+    rev23: [58,55,64,72,68,79,96,92,101,108,105,114],
+    rev22: [50,48,56,60,57,70,81,78,87,93,91,104],
+    regions: { north:0, south:0, east:9.6, west:0 },
+    segments: { premium:44, standard:36, basic:20 },
+    churnQ: [21.4, 19.8, 17.6, 16.2],
+    cats: { Electronics:15.4, Appliances:12.8, Furniture:13.6, FMCG:10.6, Automotive:6.2 }
+  },
+  west: {
+    rev23: [100,94,106,118,113,130,158,153,170,183,175,191],
+    rev22: [88,86,96,104,101,117,135,134,151,161,157,170],
+    regions: { north:0, south:0, east:0, west:12.6 },
+    segments: { premium:58, standard:28, basic:14 },
+    churnQ: [15.4, 13.8, 12.8, 12.1],
+    cats: { Electronics:21.6, Appliances:16.2, Furniture:10.4, FMCG:9.2, Automotive:9.8 }
+  }
+};
+
+const segTableData = {
+  all: [
+    { seg:'Premium',  customers:541, revenue:'₹25.04L', aov:'₹1,847', orders:1355, churn:9.2,  share:52 },
+    { seg:'Standard', customers:513, revenue:'₹14.94L', aov:'₹1,163', orders:1285, churn:14.8, share:31 },
+    { seg:'Basic',    customers:230, revenue:'₹8.19L',  aov:'₹731',   orders:1120, churn:21.6, share:17 }
+  ],
+  premium:[
+    { seg:'Premium',  customers:541, revenue:'₹25.04L', aov:'₹1,847', orders:1355, churn:9.2, share:100 }
+  ],
+  standard:[
+    { seg:'Standard', customers:513, revenue:'₹14.94L', aov:'₹1,163', orders:1285, churn:14.8, share:100 }
+  ],
+  basic:[
+    { seg:'Basic', customers:230, revenue:'₹8.19L', aov:'₹731', orders:1120, churn:21.6, share:100 }
+  ]
+};
+
+// ── CHART CONFIG ─────────────────────────────────────────────────────────────
+Chart.defaults.color = '#6b7094';
+Chart.defaults.borderColor = '#2e3350';
+Chart.defaults.font.family = 'DM Sans';
+Chart.defaults.font.size = 11;
+
+let charts = {};
+
+function makeRevTrend(d) {
+  if (charts.rev) charts.rev.destroy();
+  charts.rev = new Chart(document.getElementById('revTrendChart'), {
+    type:'line',
+    data:{
+      labels: months,
+      datasets:[
+        { label:'FY 23-24', data:d.rev23, borderColor:'#4f8ef7', backgroundColor:'rgba(79,142,247,.08)',
+          fill:true, tension:.4, borderWidth:2, pointRadius:3, pointHoverRadius:5 },
+        { label:'FY 22-23', data:d.rev22, borderColor:'#6b7094', borderDash:[4,4],
+          fill:false, tension:.4, borderWidth:1.5, pointRadius:0 }
+      ]
+    },
+    options:{
+      responsive:true, interaction:{mode:'index', intersect:false},
+      plugins:{ legend:{ labels:{ boxWidth:12, padding:16 } }, tooltip:{ callbacks:{ label: c => ` ₹${c.raw}K` } } },
+      scales:{
+        x:{ grid:{ color:'rgba(46,51,80,.5)' } },
+        y:{ grid:{ color:'rgba(46,51,80,.5)' }, ticks:{ callback: v=>'₹'+v+'K' } }
+      }
+    }
+  });
+}
+
+function makeSegDonut(d) {
+  if (charts.seg) charts.seg.destroy();
+  charts.seg = new Chart(document.getElementById('segDonut'), {
+    type:'doughnut',
+    data:{
+      labels:Object.keys(d.segments),
+      datasets:[{ data:Object.values(d.segments),
+        backgroundColor:['#4f8ef7','#7c5cfc','#6b7094'],
+        borderColor:'#1a1d27', borderWidth:3, hoverOffset:6 }]
+    },
+    options:{
+      cutout:'68%', responsive:true,
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, padding:14 } },
+        tooltip:{ callbacks:{ label: c=>` ${c.label}: ${c.raw}%` } } }
+    }
+  });
+}
+
+function makeRegionBar(d) {
+  if (charts.region) charts.region.destroy();
+  const labels = Object.keys(d.regions).filter(k=>d.regions[k]>0);
+  const vals   = labels.map(k=>d.regions[k]);
+  charts.region = new Chart(document.getElementById('regionBar'), {
+    type:'bar',
+    data:{
+      labels: labels.map(l=>l.charAt(0).toUpperCase()+l.slice(1)),
+      datasets:[{ label:'Revenue (₹L)', data:vals,
+        backgroundColor:['rgba(79,142,247,.7)','rgba(124,92,252,.7)','rgba(34,211,165,.7)','rgba(247,201,72,.7)'],
+        borderRadius:6, borderSkipped:false }]
+    },
+    options:{
+      responsive:true, indexAxis:'y',
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>` ₹${c.raw}L` } } },
+      scales:{
+        x:{ grid:{color:'rgba(46,51,80,.5)'}, ticks:{callback:v=>'₹'+v+'L'} },
+        y:{ grid:{display:false} }
+      }
+    }
+  });
+}
+
+function makeChurnLine(d) {
+  if (charts.churn) charts.churn.destroy();
+  charts.churn = new Chart(document.getElementById('churnLine'), {
+    type:'line',
+    data:{
+      labels:['Q1','Q2','Q3','Q4'],
+      datasets:[{ label:'Churn %', data:d.churnQ,
+        borderColor:'#f75a5a', backgroundColor:'rgba(247,90,90,.1)',
+        fill:true, tension:.4, borderWidth:2, pointRadius:4,
+        pointBackgroundColor:'#f75a5a' }]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>` ${c.raw}%` } } },
+      scales:{
+        x:{ grid:{color:'rgba(46,51,80,.5)'} },
+        y:{ grid:{color:'rgba(46,51,80,.5)'}, ticks:{callback:v=>v+'%'}, min:8, max:24 }
+      }
+    }
+  });
+}
+
+function makeCatBar(d) {
+  if (charts.cat) charts.cat.destroy();
+  charts.cat = new Chart(document.getElementById('catBar'), {
+    type:'bar',
+    data:{
+      labels: Object.keys(d.cats),
+      datasets:[{ label:'Revenue (₹L)', data:Object.values(d.cats),
+        backgroundColor:'rgba(79,142,247,.65)', borderRadius:6, borderSkipped:false }]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>` ₹${c.raw}L` } } },
+      scales:{
+        x:{ grid:{display:false}, ticks:{ maxRotation:30 } },
+        y:{ grid:{color:'rgba(46,51,80,.5)'}, ticks:{callback:v=>'₹'+v+'L'} }
+      }
+    }
+  });
+}
+
+function buildTable(rows) {
+  const tbody = document.getElementById('segTable');
+  tbody.innerHTML = rows.map(r => {
+    const churnColor = r.churn < 12 ? '#22d3a5' : r.churn < 18 ? '#f7c948' : '#f75a5a';
+    const pillClass  = r.seg==='Premium'?'premium':r.seg==='Standard'?'standard':'basic';
+    return `<tr>
+      <td><span class="seg-pill ${pillClass}">${r.seg}</span></td>
+      <td>${r.customers.toLocaleString()}</td>
+      <td style="font-family:var(--mono);font-weight:600">${r.revenue}</td>
+      <td style="font-family:var(--mono)">${r.aov}</td>
+      <td>${r.orders.toLocaleString()}</td>
+      <td>
+        <div class="churn-bar">
+          <span style="color:${churnColor};font-family:var(--mono);font-weight:600;width:36px">${r.churn}%</span>
+          <div class="churn-track"><div class="churn-fill" style="width:${r.churn*3.5}%;background:${churnColor}"></div></div>
+        </div>
+      </td>
+      <td>
+        <div class="churn-bar">
+          <span style="font-family:var(--mono);width:32px">${r.share}%</span>
+          <div class="churn-track"><div class="churn-fill" style="width:${r.share}%;background:var(--accent)"></div></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function applyFilters() {
+  const region = document.getElementById('regionFilter').value;
+  const seg    = document.getElementById('segFilter').value;
+  const d = data[region] || data.all;
+  const t = segTableData[seg] || segTableData.all;
+  makeRevTrend(d); makeSegDonut(d); makeRegionBar(d); makeChurnLine(d); makeCatBar(d);
+  buildTable(t);
+}
+
+function resetFilters() {
+  document.getElementById('regionFilter').value = 'all';
+  document.getElementById('segFilter').value    = 'all';
+  document.getElementById('quarterFilter').value = 'all';
+  applyFilters();
+}
+
+// Init
+applyFilters();
+</script>
+</body>
+</html>
