@@ -78,7 +78,7 @@ python analysis.py
 ## Resume Bullet Alignment
 | Resume Claim | Where it's proven |
 |---|---|
-| "Built end-to-end analytics dashboard using Power BI and SQL" | dashboard.html + queries.sql |
+| "Built end-to-end analytics dashboard using Power BI and SQL" | index.html + queries.sql |
 | "Optimized SQL queries reducing report generation time by 30%" | INDEX statements in queries.sql |
 | "Defined KPIs for sales performance and customer churn" | KPI cards in dashboard + analysis.py |
 | "DAX measures and drill-down visuals" | Segment table + filter interactions in dashboard.html |
